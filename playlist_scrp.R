@@ -1,47 +1,73 @@
 library(dplyr)
+library(tidyr)
 library(ggplot2)
 library(purrr)
 library(rvest)
 library(stringr)
 library(xml2)
+library(lubridate)
 
 #### Déclaration de variables globales ####
-list_pages <- c("","1","2","3","4","5","6")
+
 
 #### fonction get_playlist ####
 ## TODO: séparer la partie EXPORT de la partie STATS ##
 get_playlist <- function(radio = "cherie") {
   ## TODO Faire un test et renvoyer une erreur si le nom de la radio n'est pas bon ##
   url <- paste0("https://onlineradiobox.com/fr/", radio, "/playlist/")
+  # creation des répertoires
+  if(!dir.exists(paste0("playlists/",radio))) {
+    dir.create(paste0("playlists/",radio))
+  }
+  chemin <- paste0("playlists/",radio)
   
-  songs <- tibble(artist = "", title = "")
-  
-  for (i in list_pages) {
-    i <- "1"
-    page <- read_html(paste0(url,
-                             i)) %>%
-      html_nodes(".playlist td a")
-    loc <- page %>% as.character %>% str_locate("ajax")
-    foo <-
-      tibble(songs = page %>% as.character %>% str_sub(loc[, 2] + 3, str_length(.) -
-                                                         4))
-    foo <- foo %>% separate(songs, c("artist", "title"), sep = " - ")
-    songs <- bind_rows(songs, foo)
+  if (file.exists(paste0(chemin, "/songsbase-", radio, ".csv"))) {
+    songsbase <- read.csv2(paste0(chemin, "/songsbase-", radio, ".csv"), stringsAsFactors = F)
+  } else {
+    songsbase <- tibble(
+      artist = "",
+      title = "",
+      day = "1990-01-01",
+      hour = "12:00"
+    )
   }
   
+  for (i in c("","1","2","3","4","5","6")) {
+    # lecture de la page
+    foo <- read_html(paste0(url, i)) %>% 
+      html_node(".tablelist-schedule") %>% 
+      html_table() %>%
+      separate(X2, c("artist", "title"), sep = " - ", fill = "left") %>%
+      mutate(
+        artist = map_chr(.$artist, ~ str_to_title(.x)),
+        title = map_chr(.$title, ~ str_to_title(.x)),
+        day = format(now(), format = '%Y-%m-%d') %>% as.Date() - ifelse(i == "", 0, as.numeric(i))
+        ) %>% 
+      select(artist, title, day , hour = X1) %>% 
+      filter(complete.cases(.))  
+    foo$day <- foo$day %>% as.character()
+    agarder <- foo %>% count(artist) %>% filter(n < 5) %>% pull(artist)
+    
+    foo <- foo %>% filter(artist %in% agarder)
+    
+   #extraction des informations
+    songsbase <- bind_rows(songsbase, foo)
+    rm(foo, agarder)
+  }
   
-  songs <- songs[-1,] %>% mutate(
-    artist = map_chr(.$artist, ~ str_to_title(.x)),
-    title = map_chr(.$title, ~ str_to_title(.x))
-  )
-  
-  song_count <- songs %>% count(title, artist) %>% arrange(desc(n))
+  songsbase <- songsbase %>% filter(artist !="" & title != "" & hour != "En direct") %>% distinct(artist, title, day, hour)
+
+  song_count <- songsbase %>% count(title, artist) %>% arrange(desc(n))
   
   artist_count <- song_count %>% group_by(artist) %>%
     summarise(Passages = sum(n)) %>%
     arrange(desc(Passages))
   
-  songs <- songs %>% distinct(artist, title)
+  write.csv2(songsbase, 
+             paste0(chemin, "/songsbase-", radio, ".csv"),
+             row.names = F)
+  
+  songs <- songsbase %>% distinct(artist, title)
   
   ntabs <- nrow(songs) %/% 199 + 1
   
@@ -53,7 +79,7 @@ get_playlist <- function(radio = "cherie") {
     }
     
     write.csv2(get(paste0("songs", i)),
-               paste0("playlists/songs-", radio, "_", i, ".csv"),
+               paste0(chemin,"/songs-", radio, "_", i, ".csv"),
                row.names = F)
   }
   
@@ -61,7 +87,7 @@ get_playlist <- function(radio = "cherie") {
   
   write.table(
     song_list,
-    paste0("playlists/song_list-", radio, ".txt"),
+    paste0(chemin,"/song_list-", radio, ".txt"),
     row.names = F,
     col.names = F,
     quote = F
@@ -72,4 +98,4 @@ get_playlist <- function(radio = "cherie") {
 ## TODO: récupérer la liste des radios ##
 get_playlist(radio = "cherie") #récuperer le nom sur le site, par exemple ouifmroinde, nrjfrance, capferret etc. 
 get_playlist(radio = "capferret") #warning qui vient du str_detect surement ou du separate
-get_playlist(radio ="ouifmroinde")
+get_playlist(radio = "ouifmroinde")
