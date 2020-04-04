@@ -5,6 +5,15 @@ Conditions necessaires:
 - Un compte soundiiz https://soundiiz.com/
 - Des comptes sur les plateformes de streaming musique (Apple, Spotify, Youtube, Deezer, etc ...)
 
+TODO:
+- compiler les TODO
+- lister les radios accessibles manuellement
+- lister les radios assessibles automatiquement
+- appli shiny pour télecharger les fichiers générés et faire quelques stats
+
+v0.2.1
+- tri par date et heure
+
 v0.2:
 - créé un sous-répertoire du nom de la radio s'il n'existe pas
 - lit le fichier songsbase_'radio' qui sauvegarde la liste des chansons sous la forme d'un tableau

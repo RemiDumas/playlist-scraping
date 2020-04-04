@@ -34,12 +34,12 @@ get_playlist <- function(radio = "cherie") {
   
   for (i in c("","1","2","3","4","5","6")) {
     # lecture de la page
-    foo <- read_html(paste0(url, i)) %>% 
+    foo <- read_html(paste0(url, i)) %>% #TODO résoudre le bug de l'heure -2 .. surement l'entête qui croit que je suis pas en France
       html_node(".tablelist-schedule") %>% 
       html_table() %>%
       separate(X2, c("artist", "title"), sep = " - ", fill = "left") %>%
       mutate(
-        artist = map_chr(.$artist, ~ str_to_title(.x)),
+        artist = map_chr(.$artist, ~ str_to_title(.x)), 
         title = map_chr(.$title, ~ str_to_title(.x)),
         day = format(now(), format = '%Y-%m-%d') %>% as.Date() - ifelse(i == "", 0, as.numeric(i))
         ) %>% 
@@ -55,7 +55,10 @@ get_playlist <- function(radio = "cherie") {
     rm(foo, agarder)
   }
   
-  songsbase <- songsbase %>% filter(artist !="" & title != "" & hour != "En direct") %>% distinct(artist, title, day, hour)
+  songsbase <- songsbase %>% 
+    filter(artist !="" & title != "" & hour != "En direct") %>% 
+    distinct(artist, title, day, hour) %>% 
+    arrange(desc(day), desc(hour))
 
   song_count <- songsbase %>% count(title, artist) %>% arrange(desc(n))
   
