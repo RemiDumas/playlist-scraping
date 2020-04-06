@@ -1,14 +1,4 @@
-library(dplyr)
-library(tidyr)
-library(ggplot2)
-library(purrr)
-library(rvest)
-library(stringr)
-library(xml2)
-library(lubridate)
-
-#### Déclaration de variables globales ####
-
+source("global.r")
 
 #### fonction get_playlist ####
 ## TODO: séparer la partie EXPORT de la partie STATS ##
@@ -60,11 +50,16 @@ get_playlist <- function(radio = "cherie") {
     distinct(artist, title, day, hour) %>% 
     arrange(desc(day), desc(hour))
 
-  song_count <- songsbase %>% count(title, artist) %>% arrange(desc(n))
+  song_count <- songsbase %>% group_by(title, artist) %>%
+    summarise(Passages = n()) %>%
+    arrange(desc(Passages))
   
   artist_count <- song_count %>% group_by(artist) %>%
-    summarise(Passages = sum(n)) %>%
+    summarise(Passages = sum(Passages)) %>%
     arrange(desc(Passages))
+  
+  #write.xlsx2(song_count, file = paste0(chemin,"/stats_",format(now(), format = '%Y-%m-%d'),".xlsx"), sheetName = "song_stats", apprend = F)
+  #write.xlsx2(artist_count, file = paste0(chemin,"/stats_",format(now(), format = '%Y-%m-%d'),".xlsx"), sheetName = "artist_stats", apprend = T)
   
   write.csv2(songsbase, 
              paste0(chemin, "/songsbase-", radio, ".csv"),
@@ -102,3 +97,4 @@ get_playlist <- function(radio = "cherie") {
 get_playlist(radio = "cherie") #récuperer le nom sur le site, par exemple ouifmroinde, nrjfrance, capferret etc. 
 get_playlist(radio = "capferret") #warning qui vient du str_detect surement ou du separate
 get_playlist(radio = "ouifmroinde")
+
