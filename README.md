@@ -14,12 +14,16 @@ Scraping de playlists radio à partir des urls https://onlineradiobox.com/fr/'ra
 - fichier global.r qui prend toutes les déclarations et charge les packages
 - mise en ligne sur shinyapps.io
 - corriger le bug des heures GMT au lieu de CEST
+- créer un fichier csv des nouveautés
 
 ## Version
 
+### v0.2.3
+- chargement des packages dans un fichier global.r
+- les fichiers exportés sont de la forme songs-'radio'_'yyyymmddhhmmss'-'n'.csv pour n'avoir que les mises à jour depuis le dernier scraping
+
 ### v0.2.2
 - export de fichiers de statistiques de passages par artiste et par chanson
-
 
 ### v0.2.1
 - tri par date et heure

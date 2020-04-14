@@ -21,7 +21,7 @@ get_playlist <- function(radio = "cherie") {
       hour = "12:00"
     )
   }
-  
+  songsbase_old <- songsbase
   for (i in c("","1","2","3","4","5","6")) {
     # lecture de la page
     foo <- read_html(paste0(url, i)) %>% #TODO résoudre le bug de l'heure -2 .. surement l'entête qui croit que je suis pas en France
@@ -58,14 +58,14 @@ get_playlist <- function(radio = "cherie") {
     summarise(Passages = sum(Passages)) %>%
     arrange(desc(Passages))
   
-  #write.xlsx2(song_count, file = paste0(chemin,"/stats_",format(now(), format = '%Y-%m-%d'),".xlsx"), sheetName = "song_stats", apprend = F)
-  #write.xlsx2(artist_count, file = paste0(chemin,"/stats_",format(now(), format = '%Y-%m-%d'),".xlsx"), sheetName = "artist_stats", apprend = T)
+  write.xlsx2(song_count, file = paste0(chemin,"/stats_",format(now(), format = '%Y-%m-%d'),".xlsx"), sheetName = "song_stats", apprend = F)
+  write.xlsx2(artist_count, file = paste0(chemin,"/stats_",format(now(), format = '%Y-%m-%d'),".xlsx"), sheetName = "artist_stats", apprend = T)
   
   write.csv2(songsbase, 
              paste0(chemin, "/songsbase-", radio, ".csv"),
              row.names = F)
   
-  songs <- songsbase %>% distinct(artist, title)
+  songs <- dplyr::setdiff(songsbase %>% distinct(artist, title), songsbase_old %>% distinct(artist, title))
   
   ntabs <- nrow(songs) %/% 199 + 1
   
@@ -77,7 +77,7 @@ get_playlist <- function(radio = "cherie") {
     }
     
     write.csv2(get(paste0("songs", i)),
-               paste0(chemin,"/songs-", radio, "_", i, ".csv"),
+               paste0(chemin,"/songs-", radio, "_",format(now(), format='%y%m%d%H%M%S'),"-", i, ".csv"),
                row.names = F)
   }
   
